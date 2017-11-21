@@ -30,36 +30,34 @@ Information Retrieval: Florida Atlantic University, Fall 2017
 Justin J, jjohn273
 """
 
+
 # define data set
 data_path = 'hw4data-docs4sum.txt'
 raw_data = open(data_path, 'r').read()
+
 
 # define stemmer and stop words
 ps = PorterStemmer()
 nltk_stop_words = set(stopwords.words('english'))
 
+
 # split document into sentences and strip whitespace (delimeted by line)
 sentences = raw_data.split('\n')
 sentences = map(lambda sentence: sentence.strip(), sentences)
 
+
 # tokenize, stem, and remove stop words from each sentence
-tokenizedSentences = []
+stemmedSentences = []
 for idx, sentence in enumerate(sentences):
 	tokens = word_tokenize(sentence)
 	tokens = filter(lambda token: token not in nltk_stop_words, tokens)
 	tokens = map(lambda token: ps.stem(token), tokens)
-	tokenizedSentences.append(' '.join(tokens))
+	stemmedSentences.append(' '.join(tokens))
 
-# remove sentences that are equal to '?'	
-#for key, value in tokenizedSentences.items():
-#	if len(value) == 1 and value[0] == "?":
-#		print key
-#		del tokenizedSentences[key]
-
-		
+	
 # create tfidf matrix from the processed sentences
 vectorizer = TfidfVectorizer()
-tfidf_matrix = vectorizer.fit_transform(tokenizedSentences)
+tfidf_matrix = vectorizer.fit_transform(stemmedSentences)
 
 
 # cluster our tokenized sentences into 10 groups
@@ -68,31 +66,82 @@ kMeansCluster = KMeans(n_clusters=cluster_count)
 kMeansCluster.fit(tfidf_matrix)
 clusters = kMeansCluster.labels_.tolist()
 
+
 # create a sentence/cluster dictionary
 # also tally cluster totals
-# sentenceClusterDict { idx: { text: String, cluster: Number } }
+# sentenceClusterDict { idx: { text: String, stemmed: String, cluster: Number } }
 sentenceClusterDict = {}
 clusterTotals = numpy.zeros(10)
 for idx, sentence in enumerate(sentences):
 	sentenceClusterDict[idx] = {}
 	sentenceClusterDict[idx]['text'] = sentence
 	sentenceClusterDict[idx]['cluster'] = clusters[idx]
+	sentenceClusterDict[idx]['stemmed'] = stemmedSentences[idx]
 	clusterTotals[clusters[idx]] += 1
 
 
 # create dictionary that contains 10 entries, 1 entry for each cluster
 # each key in dictionary will point to list of sentences belonging to that cluster
+# we attach the index to the sentenceClusterDict object so we can recall original sentence
 clusterDict = {}
 for key, value in sentenceClusterDict.items():
-	print value
 	if value['cluster'] not in clusterDict:
 		clusterDict[value['cluster']] = []
-	clusterDict[value['cluster']].append(value['text'])
+	clusterDict[value['cluster']].append(value['stemmed'])
+	value['idx'] = len(clusterDict[value['cluster']]) - 1
+		
 
+# value is an array of cluster sentenes
+maxCosineScores = {}
+for key, value in clusterDict.items():
+	maxCosineScores[key] = {}
+	maxCosineScores[key]['score'] = 0
+	tfidf_matrix = vectorizer.fit_transform(value)
+	cos_sim_matrix = cosine_similarity(tfidf_matrix)
+	for idx, row in enumerate(cos_sim_matrix):
+		sum = 0
+		for col in row:
+			sum += col
+		if sum > maxCosineScores[key]['score']:
+			maxCosineScores[key]['score'] = sum
+			maxCosineScores[key]['idx'] = idx
+
+
+for key, value in maxCosineScores.items():
+	cluster = key
+	idx = value['idx']
+	stemmedSentence = clusterDict[cluster][idx]
+	for key, value in sentenceClusterDict.items():
+		if value['cluster'] == cluster and value['idx'] == idx:
+			print value['text']
+			print '\n'
+	
 # we now have a dictionary with 10 entries, each entry contains sentences of the same cluster
-
 # for each cluster
+#summarizations = []
+#for key, value in clusterDict.items():
+#	# calc cosine similarity matrix
+#	tfidf_matrix = vectorizer.fit_transform(value)
+#	cos_sim_matrix = cosine_similarity(tfidf_matrix)
+#	summarizations.append(cos_sim_matrix)
+	
+
 
 # calculate the centroid, or calculate cosine similarity matrix
+
+
 # sum each row of cosine similarity matrix, the row with highest sum is the doc that has the most in common with the othe documents!
 # return this sentence as the summary of the cluster
+
+
+
+
+
+
+
+
+
+
+
+
+
