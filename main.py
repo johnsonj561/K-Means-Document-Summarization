@@ -52,7 +52,6 @@ sentences = map(lambda sentence: sentence.strip(), sentences)
 # remove sentences that do not contribute meaning by assuming short sentences have less meaning
 sentences = removeShortDocs(sentences, min_sentence_length)
 
-# 
 # remove stop words from all sentences
 processedSentences = removeStopWords(sentences, nltk_stop_words)
 
@@ -78,7 +77,7 @@ clusters = kMeansCluster.labels_.tolist()
 # Organize Cluster Results
 ####################################
 
-# Create new dictionary that tracks which cluser each sentence belongs to
+# Create new dictionary that tracks which cluster each sentence belongs to
 # keeps copy of original sentences and stemmed sentences
 # sentenceDictionary { idx: { text: String, stemmed: String, cluster: Number } }
 sentenceDictionary = {}
@@ -139,16 +138,12 @@ for key, value in maxCosineScores.items():
 		if value['cluster'] == cluster and value['idx'] == idx:
 			resultIndices.append(key)
 
-print resultIndices
 resultIndices.sort()
-print resultIndices
-
 
 # Iterate over sentences and construct summary output
 result = ''
 for idx in resultIndices:
-	print idx
-	result += sentences[idx]
+	result += sentences[idx] + ' '
 		
 
 print result
